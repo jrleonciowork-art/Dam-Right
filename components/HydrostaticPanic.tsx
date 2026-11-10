@@ -7,6 +7,7 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
+import Link from "next/link";
 import HydraulicScene3D from "./HydraulicScene3D";
 import LogoMark from "./LogoMark";
 
@@ -93,17 +94,37 @@ export default function HydrostaticPanic() {
 
         <header className="absolute inset-x-0 top-0 z-[70] flex items-center justify-between px-5 py-5 sm:px-10 sm:py-7">
           <a href="#top" className="group flex items-center gap-3" aria-label="Dam Right home">
-            <span className="grid size-9 place-items-center rounded-lg border border-cyan-200/30 bg-cyan-200/10 text-cyan-200 backdrop-blur-md transition group-hover:bg-cyan-200/20">
-              <LogoMark className="size-6" />
+            <span className="grid size-10 place-items-center rounded-xl border border-cyan-200/40 bg-[#14202B]/90 text-[#5ED3DE] shadow-[0_0_20px_rgba(94,211,222,0.25)] backdrop-blur-md transition group-hover:border-cyan-300">
+              <LogoMark className="size-7" color="#5ED3DE" />
             </span>
-            <span className="font-[var(--font-display)] text-sm font-bold uppercase tracking-[0.2em]">Dam Right</span>
+            <span className="font-[var(--font-display)] text-base font-bold uppercase tracking-[0.2em] text-white">Dam Right</span>
           </a>
+          <nav className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/workspace"
+              className="rounded-full border border-cyan-300/40 bg-cyan-950/70 px-4 py-2 text-xs font-bold uppercase tracking-wider text-cyan-200 backdrop-blur-md transition hover:border-cyan-200 hover:bg-cyan-900/80 hover:text-white"
+            >
+              Workspace
+            </Link>
+            <Link
+              href="/public-evaluation"
+              className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-200 backdrop-blur-md transition hover:bg-white/20 hover:text-white"
+            >
+              Public Tracker
+            </Link>
+          </nav>
         </header>
 
         <motion.div
-          className="absolute inset-x-5 top-[15%] z-40 mx-auto text-center sm:top-[16%] lg:left-[15%] lg:right-[19%]"
+          className="absolute inset-x-5 top-[11%] z-40 mx-auto text-center sm:top-[12%] lg:left-[15%] lg:right-[19%]"
           style={{ opacity: titleOpacity, y: titleY }}
         >
+          {/* Prominent glowing brand emblem above title */}
+          <div className="mb-4 flex justify-center sm:mb-5">
+            <div className="flex size-20 items-center justify-center rounded-2xl border border-cyan-300/40 bg-[#14202B]/90 p-3.5 text-[#5ED3DE] shadow-[0_0_40px_rgba(94,211,222,0.35)] backdrop-blur-xl sm:size-24 sm:p-4">
+              <LogoMark className="size-14 sm:size-16" color="#5ED3DE" />
+            </div>
+          </div>
           <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-300 sm:mb-5 sm:text-xs sm:tracking-[0.32em]">
             Flood mitigation evaluation system
           </p>

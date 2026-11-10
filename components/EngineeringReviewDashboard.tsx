@@ -572,8 +572,8 @@ export default function EngineeringReviewDashboard() {
                 ← Home
               </Link>
               <div className="mt-3 flex flex-wrap items-center gap-3">
-                <span className="grid size-10 place-items-center rounded-xl bg-ink text-cyan-300 shadow-sm">
-                  <LogoMark className="size-7" />
+                <span className="grid size-10 place-items-center rounded-xl bg-ink text-[#5ED3DE] shadow-sm">
+                  <LogoMark className="size-7" color="#5ED3DE" />
                 </span>
                 <h1 className="font-[var(--font-display)] text-3xl font-bold tracking-tight sm:text-4xl">Dam Right</h1>
                 <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-amber-950">

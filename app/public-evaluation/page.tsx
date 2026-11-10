@@ -307,8 +307,8 @@ export default function PublicEvaluationPage() {
       <header className="border-b border-slate-900/10 bg-white/85 px-5 py-4 backdrop-blur-xl sm:px-10">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <Link href="/" className="group flex items-center gap-3" aria-label="Dam Right home">
-            <span className="grid size-9 place-items-center rounded-lg bg-slate-950 text-cyan-200 transition group-hover:bg-cyan-950">
-              <LogoMark className="size-6" />
+            <span className="grid size-10 place-items-center rounded-xl bg-slate-950 text-[#5ED3DE] shadow-sm transition group-hover:bg-cyan-950">
+              <LogoMark className="size-7" color="#5ED3DE" />
             </span>
             <span className="hidden font-[var(--font-display)] text-sm font-bold uppercase tracking-[0.18em] sm:block">
               Dam Right

@@ -25,7 +25,35 @@ export default function Home() {
     <main className="bg-[#06151d] text-white">
       <HydrostaticPanic />
 
-      <section className="border-y border-cyan-200/20 bg-cyan-300 px-5 py-6 text-slate-950 sm:px-10">
+      {/* Sticky Navigation Bar with Brand Emblem */}
+      <nav className="sticky top-0 z-50 border-y border-white/10 bg-[#06151d]/90 px-5 py-3.5 shadow-xl backdrop-blur-xl sm:px-10">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
+          <Link href="/" className="group flex items-center gap-3" aria-label="Dam Right home">
+            <span className="grid size-9 place-items-center rounded-xl border border-cyan-300/30 bg-[#14202B] text-[#5ED3DE] shadow-sm transition group-hover:border-cyan-300">
+              <LogoMark className="size-6" color="#5ED3DE" />
+            </span>
+            <span className="font-[var(--font-display)] text-sm font-bold uppercase tracking-[0.2em] text-white">
+              Dam Right
+            </span>
+          </Link>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/workspace"
+              className="rounded-full bg-cyan-200 px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-950 transition hover:bg-white"
+            >
+              Workspace
+            </Link>
+            <Link
+              href="/public-evaluation"
+              className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-white/10"
+            >
+              Public Tracker
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      <section className="border-b border-cyan-200/20 bg-cyan-300 px-5 py-6 text-slate-950 sm:px-10">
         <div className="mx-auto flex max-w-6xl flex-col justify-between gap-3 lg:flex-row lg:items-center">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.28em] text-cyan-950">
