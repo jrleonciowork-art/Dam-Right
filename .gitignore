@@ -8,3 +8,7 @@ npm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 
+
+# demo video (Remotion)
+video/node_modules
+video/out

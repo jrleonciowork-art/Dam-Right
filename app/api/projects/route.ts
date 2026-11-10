@@ -6,6 +6,8 @@ export const dynamic = "force-dynamic";
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 const DEFAULT_TIMEOUT_MS = 12_000;
+const DEFAULT_PROJECTS_API_URL =
+  "https://lovethephilippines.com/api/open/v1/projects";
 
 type ProjectStatus =
   | "for_procurement"
@@ -42,6 +44,9 @@ type ProjectQuery = {
   city: string;
   river_basin: string;
   project_name: string;
+  region_psgc: string;
+  province_psgc: string;
+  citymun_psgc: string;
   status: string;
   cursor: string;
   mode: "suggest" | "search";
@@ -247,7 +252,7 @@ function extractMeta(payload: unknown) {
 }
 
 function isFloodControlProject(project: NationwideProject) {
-  return /flood|drainage|river|dike|revetment|seawall|waterway|channel|slope protection/i.test(
+  return /flood|drainage|dike|revetment|riverwall|seawall|waterway improvement|channel improvement|slope protection/i.test(
     [project.project_name, project.project_type].filter(Boolean).join(" "),
   );
 }
@@ -288,6 +293,52 @@ async function fetchLovePhilippines(
   query: ProjectQuery,
   signal: AbortSignal,
 ) {
+  if (query.province_psgc || query.citymun_psgc) {
+    const listUrl = new URL(endpoint);
+    listUrl.search = "";
+    listUrl.searchParams.set("limit", "200");
+    if (query.province_psgc) {
+      listUrl.searchParams.set("province", query.province_psgc);
+    }
+    if (query.citymun_psgc) {
+      listUrl.searchParams.set("citymun", query.citymun_psgc);
+    }
+    if (query.cursor) listUrl.searchParams.set("cursor", query.cursor);
+
+    const listResponse = await fetch(listUrl, {
+      headers: { Accept: "application/json" },
+      signal,
+      cache: "no-store",
+    });
+    if (!listResponse.ok) return { response: listResponse, projects: null };
+
+    const payload: unknown = await listResponse.json();
+    const projects = extractItems(payload)
+      .map((item, index) => {
+        const record = asRecord(item);
+        return normalizeProject(
+          record
+            ? {
+                ...record,
+                location: [
+                  asString(record.province_name),
+                  asString(record.region_name),
+                ]
+                  .filter(Boolean)
+                  .join(", "),
+                data_source:
+                  "DPWH Transparency Portal via Love the Philippines",
+              }
+            : item,
+          index,
+        );
+      })
+      .filter((project): project is NationwideProject => project !== null)
+      .filter(isFloodControlProject)
+      .slice(0, query.limit);
+    return { response: null, projects, meta: extractMeta(payload) };
+  }
+
   const searchText = [
     query.q,
     query.project_name,
@@ -345,7 +396,7 @@ async function fetchLovePhilippines(
       .map(asRecord)
       .filter((item): item is UnknownRecord => item !== null)
       .filter((item) =>
-        /flood|drainage|river|dike|revetment|seawall|waterway|channel|slope protection/i.test(
+        /flood|drainage|dike|revetment|riverwall|seawall|waterway improvement|channel improvement|slope protection/i.test(
           asString(item.title) ?? "",
         ),
       )
@@ -416,18 +467,8 @@ async function fetchLovePhilippines(
 }
 
 export async function GET(request: NextRequest) {
-  const upstreamUrl = process.env.PROJECTS_DATA_API_URL?.trim();
-  if (!upstreamUrl) {
-    return NextResponse.json(
-      {
-        error: "Nationwide project data service is not configured.",
-        code: "projects_data_source_unavailable",
-        details:
-          "Set PROJECTS_DATA_API_URL to an authorized nationwide project index. No mock project fallback is used.",
-      },
-      { status: 503 },
-    );
-  }
+  const upstreamUrl =
+    process.env.PROJECTS_DATA_API_URL?.trim() || DEFAULT_PROJECTS_API_URL;
 
   let endpoint: URL;
   try {
@@ -457,6 +498,9 @@ export async function GET(request: NextRequest) {
     city: clean(incoming.get("city")),
     river_basin: clean(incoming.get("river_basin")),
     project_name: clean(incoming.get("project_name")),
+    region_psgc: clean(incoming.get("region_psgc"), 10),
+    province_psgc: clean(incoming.get("province_psgc"), 10),
+    citymun_psgc: clean(incoming.get("citymun_psgc"), 10),
     status: clean(incoming.get("status"), 40),
     cursor: clean(incoming.get("cursor"), 500),
     mode: incoming.get("mode") === "suggest" ? "suggest" : "search",

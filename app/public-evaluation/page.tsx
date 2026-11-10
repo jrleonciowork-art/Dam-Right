@@ -1,15 +1,9 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import {
-  FormEvent,
-  KeyboardEvent,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useState } from "react";
+import LogoMark from "@/components/LogoMark";
 
 type ProjectStatus =
   | "for_procurement"
@@ -47,18 +41,18 @@ type ProjectsResponse = {
   };
 };
 
-type Filters = {
-  region: string;
-  province: string;
-  city: string;
-  river_basin: string;
+type LocationOption = {
+  code: string;
+  name: string;
+  level: string;
+  parent_code: string | null;
+  project_count: number | null;
+  flood_project_count: number | null;
+  source_url: string | null;
 };
 
-const emptyFilters: Filters = {
-  region: "",
-  province: "",
-  city: "",
-  river_basin: "",
+type LocationsResponse = {
+  data: LocationOption[];
 };
 
 const comparisonProjects: NationwideProject[] = [
@@ -135,27 +129,6 @@ const comparisonProjects: NationwideProject[] = [
 const cx = (...classes: Array<string | false | null | undefined>) =>
   classes.filter(Boolean).join(" ");
 
-function buildParams(
-  query: string,
-  filters: Filters,
-  mode: "search" | "suggest",
-  cursor?: string | null,
-) {
-  const params = new URLSearchParams({
-    mode,
-    limit: mode === "suggest" ? "8" : "20",
-  });
-  if (query.trim()) params.set("q", query.trim());
-  if (filters.region.trim()) params.set("region", filters.region.trim());
-  if (filters.province.trim()) params.set("province", filters.province.trim());
-  if (filters.city.trim()) params.set("city", filters.city.trim());
-  if (filters.river_basin.trim()) {
-    params.set("river_basin", filters.river_basin.trim());
-  }
-  if (cursor) params.set("cursor", cursor);
-  return params;
-}
-
 function getErrorMessage(payload: unknown, fallback: string) {
   if (
     payload &&
@@ -170,164 +143,172 @@ function getErrorMessage(payload: unknown, fallback: string) {
 
 export default function PublicEvaluationPage() {
   const reduceMotion = useReducedMotion();
-  const listboxId = useId();
-  const searchContainerRef = useRef<HTMLDivElement>(null);
-  const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<Filters>(emptyFilters);
-  const [suggestions, setSuggestions] = useState<NationwideProject[]>([]);
+  const [regions, setRegions] = useState<LocationOption[]>([]);
+  const [provinces, setProvinces] = useState<LocationOption[]>([]);
+  const [directCities, setDirectCities] = useState<LocationOption[]>([]);
+  const [cities, setCities] = useState<LocationOption[]>([]);
+  const [selectedRegionCode, setSelectedRegionCode] = useState("");
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState("");
+  const [selectedCityCode, setSelectedCityCode] = useState("");
   const [results, setResults] = useState<NationwideProject[]>([]);
   const [selectedProject, setSelectedProject] =
     useState<NationwideProject | null>(comparisonProjects[0]);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [total, setTotal] = useState<number | null>(null);
-  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
-  const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const hasFilters = Object.values(filters).some((value) => value.trim());
-
   useEffect(() => {
-    if (query.trim().length < 2 && !hasFilters) {
-      setSuggestions([]);
-      setSuggestionsOpen(false);
-      return;
-    }
-
     const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      setIsSuggesting(true);
+    async function loadRegions() {
       try {
-        const params = buildParams(query, filters, "suggest");
-        const response = await fetch("/api/projects?" + params.toString(), {
+        const response = await fetch("/api/locations?level=regions", {
           signal: controller.signal,
         });
         const payload: unknown = await response.json();
         if (!response.ok) {
           throw new Error(
-            getErrorMessage(payload, "Project suggestions are temporarily unavailable."),
+            getErrorMessage(payload, "The official region list is unavailable."),
           );
         }
-        const data = payload as ProjectsResponse;
-        setSuggestions(data.data);
-        setSuggestionsOpen(data.data.length > 0);
-        setActiveSuggestion(-1);
+        setRegions((payload as LocationsResponse).data);
         setError(null);
       } catch (requestError) {
         if (requestError instanceof Error && requestError.name !== "AbortError") {
-          setSuggestions([]);
-          setSuggestionsOpen(false);
           setError(requestError.message);
         }
       } finally {
-        if (!controller.signal.aborted) setIsSuggesting(false);
-      }
-    }, 350);
-
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [filters, hasFilters, query]);
-
-  useEffect(() => {
-    function closeSuggestions(event: MouseEvent) {
-      if (
-        searchContainerRef.current &&
-        !searchContainerRef.current.contains(event.target as Node)
-      ) {
-        setSuggestionsOpen(false);
+        if (!controller.signal.aborted) setIsLoadingLocations(false);
       }
     }
-    document.addEventListener("mousedown", closeSuggestions);
-    return () => document.removeEventListener("mousedown", closeSuggestions);
+    void loadRegions();
+
+    return () => controller.abort();
   }, []);
 
-  async function searchProjects(cursor?: string | null, append = false) {
-    setIsSearching(true);
-    setError(null);
-    setSuggestionsOpen(false);
+  useEffect(() => {
+    if (!selectedRegionCode) {
+      setProvinces([]);
+      setDirectCities([]);
+      setCities([]);
+      return;
+    }
+    const controller = new AbortController();
+    async function loadRegionChildren() {
+      setIsLoadingLocations(true);
+      setError(null);
+      try {
+        const [provinceResponse, cityResponse] = await Promise.all([
+          fetch(
+            `/api/locations?level=provinces&parent=${selectedRegionCode}`,
+            { signal: controller.signal },
+          ),
+          fetch(`/api/locations?level=citymun&parent=${selectedRegionCode}`, {
+            signal: controller.signal,
+          }),
+        ]);
+        const provincePayload: unknown = await provinceResponse.json();
+        const cityPayload: unknown = await cityResponse.json();
+        if (!provinceResponse.ok || !cityResponse.ok) {
+          throw new Error("The province and city lists could not be loaded.");
+        }
+        const nextProvinces = (provincePayload as LocationsResponse).data;
+        const nextDirectCities = (cityPayload as LocationsResponse).data;
+        setProvinces(nextProvinces);
+        setDirectCities(nextDirectCities);
+        setCities(nextDirectCities);
+      } catch (requestError) {
+        if (requestError instanceof Error && requestError.name !== "AbortError") {
+          setError(requestError.message);
+        }
+      } finally {
+        if (!controller.signal.aborted) setIsLoadingLocations(false);
+      }
+    }
+    void loadRegionChildren();
+    return () => controller.abort();
+  }, [selectedRegionCode]);
 
-    try {
-      const params = buildParams(query, filters, "search", cursor);
-      const response = await fetch("/api/projects?" + params.toString());
-      const payload: unknown = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          getErrorMessage(payload, "The nationwide project search is unavailable."),
+  useEffect(() => {
+    if (!selectedProvinceCode) {
+      setCities(directCities);
+      return;
+    }
+    const controller = new AbortController();
+    async function loadCities() {
+      setIsLoadingLocations(true);
+      try {
+        const response = await fetch(
+          `/api/locations?level=citymun&parent=${selectedProvinceCode}`,
+          { signal: controller.signal },
         );
+        const payload: unknown = await response.json();
+        if (!response.ok) throw new Error("The city and municipality list is unavailable.");
+        setCities((payload as LocationsResponse).data);
+      } catch (requestError) {
+        if (requestError instanceof Error && requestError.name !== "AbortError") {
+          setError(requestError.message);
+        }
+      } finally {
+        if (!controller.signal.aborted) setIsLoadingLocations(false);
       }
+    }
+    void loadCities();
+    return () => controller.abort();
+  }, [directCities, selectedProvinceCode]);
 
-      const data = payload as ProjectsResponse;
-      setResults((current) => (append ? [...current, ...data.data] : data.data));
-      setNextCursor(data.pagination.next_cursor);
-      setTotal(data.pagination.total);
-      setHasSearched(true);
-
-      if (!append && data.data.length > 0) {
-        setSelectedProject(data.data[0]);
-      } else if (!append) {
-        setSelectedProject(null);
-      }
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "The nationwide project search is unavailable.",
-      );
-      if (!append) {
-        setResults([]);
-        setSelectedProject(null);
+  useEffect(() => {
+    const locationCode = selectedCityCode || selectedProvinceCode;
+    if (!locationCode) {
+      setResults([]);
+      setHasSearched(false);
+      return;
+    }
+    const controller = new AbortController();
+    async function loadProjects() {
+      setIsSearching(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams({ mode: "search", limit: "100" });
+        if (selectedProvinceCode) {
+          params.set("province_psgc", selectedProvinceCode);
+        }
+        if (selectedCityCode) params.set("citymun_psgc", selectedCityCode);
+        const response = await fetch(`/api/projects?${params}`, {
+          signal: controller.signal,
+        });
+        const payload: unknown = await response.json();
+        if (!response.ok) {
+          throw new Error(
+            getErrorMessage(payload, "Projects for this location are unavailable."),
+          );
+        }
+        const data = payload as ProjectsResponse;
+        setResults(data.data);
+        setSelectedProject(data.data[0] ?? null);
         setHasSearched(true);
+      } catch (requestError) {
+        if (requestError instanceof Error && requestError.name !== "AbortError") {
+          setError(requestError.message);
+          setResults([]);
+          setSelectedProject(null);
+          setHasSearched(true);
+        }
+      } finally {
+        if (!controller.signal.aborted) setIsSearching(false);
       }
-    } finally {
-      setIsSearching(false);
     }
-  }
-
-  function submitSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void searchProjects();
-  }
-
-  function chooseProject(project: NationwideProject) {
-    setSelectedProject(project);
-    setQuery(project.project_name);
-    setSuggestionsOpen(false);
-    setActiveSuggestion(-1);
-  }
-
-  function handleSearchKeys(event: KeyboardEvent<HTMLInputElement>) {
-    if (!suggestionsOpen || suggestions.length === 0) return;
-
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setActiveSuggestion((current) =>
-        current >= suggestions.length - 1 ? 0 : current + 1,
-      );
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setActiveSuggestion((current) =>
-        current <= 0 ? suggestions.length - 1 : current - 1,
-      );
-    } else if (event.key === "Enter" && activeSuggestion >= 0) {
-      event.preventDefault();
-      chooseProject(suggestions[activeSuggestion]);
-    } else if (event.key === "Escape") {
-      setSuggestionsOpen(false);
-    }
-  }
+    void loadProjects();
+    return () => controller.abort();
+  }, [selectedCityCode, selectedProvinceCode]);
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#f4f8f5] text-slate-950">
       <header className="border-b border-slate-900/10 bg-white/85 px-5 py-4 backdrop-blur-xl sm:px-10">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <Link href="/" className="group flex items-center gap-3" aria-label="Dam Right home">
-            <span className="grid size-9 place-items-center bg-slate-950 font-[var(--font-display)] text-sm font-black text-cyan-200 transition group-hover:bg-cyan-950">
-              DR
+            <span className="grid size-9 place-items-center rounded-lg bg-slate-950 text-cyan-200 transition group-hover:bg-cyan-950">
+              <LogoMark className="size-6" />
             </span>
             <span className="hidden font-[var(--font-display)] text-sm font-bold uppercase tracking-[0.18em] sm:block">
               Dam Right
@@ -359,175 +340,139 @@ export default function PublicEvaluationPage() {
               Find the flood project near you.
             </h1>
             <p className="max-w-xl text-base leading-7 text-slate-600 lg:justify-self-end">
-              Search by street, city, river, province, or project name. We turn
-              official project records into an answer people can actually use.
+              Pick your region, province, and city from official location lists.
+              Then choose a flood-control project—no exact spelling required.
             </p>
           </div>
 
-          <form
-            onSubmit={submitSearch}
-            className="mt-10 rounded-[2rem] border border-cyan-900/15 bg-white/95 p-4 shadow-[0_24px_70px_rgba(15,23,42,.1)] sm:p-6"
-          >
-            <div ref={searchContainerRef} className="relative">
-              <label
-                htmlFor="nationwide-project-search"
-                className="text-[10px] font-black uppercase tracking-[0.25em] text-cyan-800"
-              >
-                Search all Philippine flood-control projects
-              </label>
-              <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-                <div className="relative flex-1">
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-xl text-cyan-800"
-                  >
-                    ⌕
-                  </span>
-                  <input
-                    id="nationwide-project-search"
-                    role="combobox"
-                    aria-autocomplete="list"
-                    aria-expanded={suggestionsOpen}
-                    aria-controls={listboxId}
-                    aria-activedescendant={
-                      activeSuggestion >= 0
-                        ? listboxId + "-option-" + activeSuggestion
-                        : undefined
-                    }
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    onFocus={() =>
-                      suggestions.length > 0 && setSuggestionsOpen(true)
-                    }
-                    onKeyDown={handleSearchKeys}
-                    placeholder="Try “Marikina River”, “Pampanga”, or your city"
-                    className="min-h-16 w-full rounded-2xl border border-slate-900/15 bg-[#f7fbfa] py-4 pl-14 pr-12 font-[var(--font-display)] text-base font-semibold outline-none transition placeholder:font-normal placeholder:text-slate-400 hover:border-cyan-700 focus:border-cyan-700 focus:ring-4 focus:ring-cyan-600/10"
-                  />
-                  {isSuggesting && (
-                    <span className="absolute right-5 top-1/2 size-5 -translate-y-1/2 animate-spin rounded-full border-2 border-cyan-700 border-t-transparent" />
-                  )}
-                </div>
-                <button
-                  type="submit"
-                  disabled={isSearching}
-                  className="min-h-16 rounded-2xl bg-slate-950 px-7 text-xs font-black uppercase tracking-[0.18em] text-white transition hover:bg-cyan-900 disabled:cursor-wait disabled:opacity-60 sm:min-w-40"
-                >
-                  {isSearching ? "Searching…" : "Search projects"}
-                </button>
+          <div className="mt-10 rounded-[2rem] border border-cyan-900/15 bg-white/95 p-4 shadow-[0_24px_70px_rgba(15,23,42,.1)] sm:p-6">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-cyan-800">
+                  Choose your area, then choose the project
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  No spelling contest. The location list follows official PSA geographic codes.
+                </p>
               </div>
-
-              <AnimatePresence>
-                {suggestionsOpen && suggestions.length > 0 && (
-                  <motion.ul
-                    id={listboxId}
-                    role="listbox"
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    className="absolute inset-x-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-2xl border border-slate-900/10 bg-white p-2 shadow-[0_25px_80px_rgba(15,23,42,.18)] sm:right-44"
-                  >
-                    {suggestions.map((project, index) => (
-                      <li
-                        key={project.id}
-                        id={listboxId + "-option-" + index}
-                        role="option"
-                        aria-selected={activeSuggestion === index}
-                      >
-                        <button
-                          type="button"
-                          onMouseEnter={() => setActiveSuggestion(index)}
-                          onClick={() => chooseProject(project)}
-                          className={cx(
-                            "w-full rounded-xl px-4 py-3 text-left transition",
-                            activeSuggestion === index
-                              ? "bg-cyan-50"
-                              : "hover:bg-slate-50",
-                          )}
-                        >
-                          <span className="block font-[var(--font-display)] text-sm font-semibold">
-                            {project.project_name}
-                          </span>
-                          <span className="mt-1 block text-xs text-slate-500">
-                            {project.location}
-                            {project.river_basin
-                              ? " · " + project.river_basin
-                              : ""}
-                          </span>
-                        </button>
-                      </li>
-                    ))}
-                  </motion.ul>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <FilterInput
-                label="Region"
-                placeholder="e.g. Central Luzon"
-                value={filters.region}
-                onChange={(value) =>
-                  setFilters((current) => ({ ...current, region: value }))
-                }
-              />
-              <FilterInput
-                label="Province"
-                placeholder="e.g. Pampanga"
-                value={filters.province}
-                onChange={(value) =>
-                  setFilters((current) => ({ ...current, province: value }))
-                }
-              />
-              <FilterInput
-                label="City or municipality"
-                placeholder="e.g. Marikina City"
-                value={filters.city}
-                onChange={(value) =>
-                  setFilters((current) => ({ ...current, city: value }))
-                }
-              />
-              <FilterInput
-                label="River or basin"
-                placeholder="e.g. Pampanga Delta"
-                value={filters.river_basin}
-                onChange={(value) =>
-                  setFilters((current) => ({ ...current, river_basin: value }))
-                }
-              />
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-              <span>
-                Results come from the configured nationwide project data service.
-              </span>
-              {(query || hasFilters) && (
+              {(selectedRegionCode || selectedProvinceCode || selectedCityCode) && (
                 <button
                   type="button"
                   onClick={() => {
-                    setQuery("");
-                    setFilters(emptyFilters);
-                    setSuggestions([]);
+                    setSelectedRegionCode("");
+                    setSelectedProvinceCode("");
+                    setSelectedCityCode("");
                     setResults([]);
-                    setSelectedProject(null);
+                    setSelectedProject(comparisonProjects[0]);
                     setHasSearched(false);
                     setError(null);
                   }}
-                  className="font-bold text-cyan-800 underline decoration-cyan-800/30 underline-offset-4"
+                  className="text-xs font-bold text-cyan-800 underline decoration-cyan-800/30 underline-offset-4"
                 >
-                  Clear search
+                  Start over
                 </button>
               )}
             </div>
-          </form>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <LocationSelect
+                step="01"
+                label="Region"
+                value={selectedRegionCode}
+                options={regions}
+                placeholder={isLoadingLocations ? "Loading regions…" : "Select a region"}
+                disabled={isLoadingLocations && regions.length === 0}
+                onChange={(code) => {
+                  setSelectedRegionCode(code);
+                  setSelectedProvinceCode("");
+                  setSelectedCityCode("");
+                  setResults([]);
+                }}
+              />
+              <LocationSelect
+                step="02"
+                label="Province"
+                value={selectedProvinceCode}
+                options={provinces}
+                placeholder={
+                  !selectedRegionCode
+                    ? "Select a region first"
+                    : provinces.length === 0
+                      ? "No province — choose a city"
+                      : "Select a province"
+                }
+                disabled={!selectedRegionCode || provinces.length === 0}
+                onChange={(code) => {
+                  setSelectedProvinceCode(code);
+                  setSelectedCityCode("");
+                  setResults([]);
+                }}
+              />
+              <LocationSelect
+                step="03"
+                label="City or municipality"
+                value={selectedCityCode}
+                options={cities}
+                placeholder={
+                  !selectedRegionCode
+                    ? "Select a region first"
+                    : cities.length === 0
+                      ? "Select a province"
+                      : "All cities / municipalities"
+                }
+                disabled={!selectedRegionCode || cities.length === 0}
+                allowAll={Boolean(selectedProvinceCode)}
+                onChange={setSelectedCityCode}
+              />
+              <label className="block">
+                <span className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">
+                  <span className="grid size-6 place-items-center rounded-full bg-cyan-100 text-cyan-900">04</span>
+                  Flood-control project
+                </span>
+                <select
+                  value={selectedProject?.id ?? ""}
+                  disabled={results.length === 0 || isSearching}
+                  onChange={(event) => {
+                    const project = results.find((item) => item.id === event.target.value);
+                    if (project) setSelectedProject(project);
+                  }}
+                  className="mt-2 min-h-14 w-full rounded-xl border border-slate-900/10 bg-slate-50 px-3 text-sm font-semibold outline-none transition focus:border-cyan-700 focus:ring-4 focus:ring-cyan-600/10 disabled:cursor-not-allowed disabled:text-slate-400"
+                >
+                  <option value="">
+                    {isSearching
+                      ? "Loading flood projects…"
+                      : results.length === 0
+                        ? "Choose a province or city first"
+                        : "Select a project"}
+                  </option>
+                  {results.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.project_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-900/10 pt-4 text-xs text-slate-500">
+              <span>
+                Locations: PSA PSGC · Projects: DPWH Transparency Portal · Mirror: Love the Philippines / BetterGov
+              </span>
+              {results.length > 0 && (
+                <strong className="text-cyan-900">
+                  {results.length} flood-control projects loaded
+                </strong>
+              )}
+            </div>
+          </div>
 
           {error && (
             <div
               role="alert"
               className="mt-4 rounded-2xl border border-amber-900/15 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-950"
             >
-              <strong>Live data unavailable.</strong> {error} This dashboard does
-              not substitute made-up projects when the official data connection is
-              missing.
+              <strong>Live data temporarily unavailable.</strong> {error} Try again in a
+              moment; the comparison samples below still work.
             </div>
           )}
         </motion.div>
@@ -558,21 +503,9 @@ export default function PublicEvaluationPage() {
                   Matching projects
                 </p>
                 <h2 className="mt-2 font-[var(--font-display)] text-2xl font-semibold">
-                  {total === null
-                    ? results.length + " loaded"
-                    : total.toLocaleString("en-PH") + " found"}
+                  {results.length} loaded for this area
                 </h2>
               </div>
-              {nextCursor && (
-                <button
-                  type="button"
-                  disabled={isSearching}
-                  onClick={() => void searchProjects(nextCursor, true)}
-                  className="rounded-full border border-slate-900/15 px-5 py-2 text-xs font-bold uppercase tracking-[0.14em] transition hover:bg-slate-950 hover:text-white disabled:opacity-50"
-                >
-                  {isSearching ? "Loading…" : "Load more"}
-                </button>
-              )}
             </div>
             <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {results.map((project) => (
@@ -695,28 +628,49 @@ function ComparisonProjectList({
   );
 }
 
-function FilterInput({
+function LocationSelect({
+  step,
   label,
   placeholder,
   value,
+  options,
+  disabled,
+  allowAll = false,
   onChange,
 }: {
+  step: string;
   label: string;
   placeholder: string;
   value: string;
+  options: LocationOption[];
+  disabled: boolean;
+  allowAll?: boolean;
   onChange: (value: string) => void;
 }) {
   return (
     <label className="block">
-      <span className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">
+      <span className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">
+        <span className="grid size-6 place-items-center rounded-full bg-cyan-100 text-cyan-900">
+          {step}
+        </span>
         {label}
       </span>
-      <input
+      <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="mt-2 min-h-11 w-full rounded-xl border border-slate-900/10 bg-slate-50 px-3 text-sm outline-none transition focus:border-cyan-700 focus:ring-4 focus:ring-cyan-600/10"
-      />
+        disabled={disabled}
+        className="mt-2 min-h-14 w-full rounded-xl border border-slate-900/10 bg-slate-50 px-3 text-sm font-semibold outline-none transition focus:border-cyan-700 focus:ring-4 focus:ring-cyan-600/10 disabled:cursor-not-allowed disabled:text-slate-400"
+      >
+        <option value="">{allowAll && options.length > 0 ? "All cities / municipalities" : placeholder}</option>
+        {options.map((option) => (
+          <option key={option.code} value={option.code}>
+            {option.name}
+            {option.flood_project_count !== null
+              ? ` (${option.flood_project_count} flood projects)`
+              : ""}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }
@@ -743,8 +697,8 @@ function EmptyState({
         </h2>
         <p className="mt-3 text-sm leading-6 text-slate-500">
           {hasSearched
-            ? "Try a broader location or remove one of the filters."
-            : "Pick a verified result to see what changed before and after construction."}
+            ? "Try the whole province or choose a nearby city or municipality."
+            : "Choose a location above, then pick a project to inspect its public record."}
         </p>
       </div>
     </div>
@@ -975,19 +929,36 @@ function ProjectFacts({ project }: { project: NationwideProject }) {
   });
 
   return (
-    <div className="grid border-t border-slate-900/10 sm:grid-cols-3">
-      <Fact
-        label="Project budget"
-        value={project.budget === null ? "Not published" : currency.format(project.budget)}
-      />
-      <Fact
-        label="Completion date"
-        value={project.completion_date ?? "Not published"}
-      />
-      <Fact
-        label="River or basin"
-        value={project.river_basin ?? "Not identified"}
-      />
+    <div className="border-t border-slate-900/10">
+      <div className="grid sm:grid-cols-3">
+        <Fact
+          label="Project budget"
+          value={project.budget === null ? "Not published" : currency.format(project.budget)}
+        />
+        <Fact
+          label="Completion date"
+          value={project.completion_date ?? "Not published"}
+        />
+        <Fact
+          label="River or basin"
+          value={project.river_basin ?? "Not identified"}
+        />
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-900/10 bg-slate-50 px-6 py-4 text-xs text-slate-500 sm:px-8">
+        <span>
+          Source: {project.data_source ?? "Public project record"}
+        </span>
+        {project.source_url && (
+          <a
+            href={project.source_url}
+            target="_blank"
+            rel="noreferrer"
+            className="font-bold text-cyan-800 underline decoration-cyan-800/30 underline-offset-4"
+          >
+            Open cited government record ↗
+          </a>
+        )}
+      </div>
     </div>
   );
 }

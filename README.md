@@ -15,13 +15,14 @@ The application is a Phase 1 prototype. It is not a certification tool and must 
 | `/workspace` | Engineering professionals | Structural integrity calculator and design-versus-as-built review |
 | `/public-evaluation` | General public | Nationwide project search and plain-English before-versus-after comparisons |
 | `/api/projects` | Application API | Normalizes project data from a configured nationwide source |
+| `/api/locations` | Application API | Supplies the official cascading PSGC location hierarchy |
 | `/api/parse-blueprint` | Professional workspace | Optional Gemini-assisted blueprint candidate extraction |
 
 ## Public effectiveness checker
 
 The public dashboard includes:
 
-- Nationwide autocomplete and project search by name, city, province, region, or river.
+- Cascading Region → Province → City/Municipality → Project dropdowns using current PSGC codes.
 - Live project names, locations, budgets, completion dates, and statuses from the configured project feed.
 - A comparison-ready project list demonstrating the full before-versus-after experience.
 - Visual historical and current water levels with a marked doorstep line.
@@ -99,7 +100,8 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `PROJECTS_DATA_API_URL` | Yes, for nationwide search | Project dataset endpoint. The example uses the public no-key mirror. |
+| `PROJECTS_DATA_API_URL` | No | Optional project dataset override. The public no-key mirror is the built-in default. |
+| `LOCATIONS_DATA_API_URL` | No | Optional PSGC-compatible location service override. |
 | `PROJECTS_DATA_API_TIMEOUT_MS` | No | Upstream timeout in milliseconds. Defaults to 12 seconds. |
 | `PROJECTS_DATA_API_KEY` | No | Bearer token for a protected replacement project service. |
 | `GEMINI_API_KEY` | No | Enables blueprint candidate extraction in the professional workspace. |
@@ -116,6 +118,9 @@ Never commit `.env.local` or real API keys.
 - `city`
 - `river_basin`
 - `project_name`
+- `region_psgc`
+- `province_psgc`
+- `citymun_psgc`
 - `status`
 - `limit`
 - `cursor`
@@ -124,7 +129,7 @@ Never commit `.env.local` or real API keys.
 Example:
 
 ```text
-/api/projects?q=Marikina&mode=search&limit=20
+/api/projects?province_psgc=0305400000&citymun_psgc=0305413000&limit=100
 ```
 
 Normalized project responses include the project name, location, budget, completion date, status, source information, and nullable before-and-after flood depths.

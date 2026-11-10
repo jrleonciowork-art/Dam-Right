@@ -1,4 +1,5 @@
 import HydrostaticPanic from "@/components/HydrostaticPanic";
+import LogoMark from "@/components/LogoMark";
 import Link from "next/link";
 
 const capabilities = [
@@ -209,8 +210,11 @@ export default function Home() {
       </section>
 
       <footer className="border-t border-white/10 px-5 py-8 text-xs text-slate-500 sm:px-10">
-        <div className="mx-auto flex max-w-6xl flex-col justify-between gap-2 sm:flex-row">
-          <p>Dam Right · Flood control mitigation and evaluation</p>
+        <div className="mx-auto flex max-w-6xl flex-col justify-between gap-2 sm:flex-row sm:items-center">
+          <p className="flex items-center gap-2.5">
+            <LogoMark className="size-5 text-cyan-300" />
+            <span>Dam Right · Flood control mitigation and evaluation</span>
+          </p>
           <p>Prototype calculations · Not for certification</p>
         </div>
       </footer>

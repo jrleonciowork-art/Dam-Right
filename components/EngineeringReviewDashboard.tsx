@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 import AsBuiltVerificationPanel from "@/components/AsBuiltVerificationPanel";
 import BlueprintIngestion from "@/components/BlueprintIngestion";
+import LogoMark from "@/components/LogoMark";
 import type { ExtractedBlueprintData } from "@/lib/blueprint/types";
 import { BLANK_WALL_INPUT, DEFAULT_WALL_INPUT } from "@/lib/engineering/defaults";
 import {
@@ -570,7 +571,10 @@ export default function EngineeringReviewDashboard() {
               <Link href="/" className="text-xs font-bold uppercase tracking-[0.18em] text-tide hover:text-ink">
                 ← Home
               </Link>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <span className="grid size-10 place-items-center rounded-xl bg-ink text-cyan-300 shadow-sm">
+                  <LogoMark className="size-7" />
+                </span>
                 <h1 className="font-[var(--font-display)] text-3xl font-bold tracking-tight sm:text-4xl">Dam Right</h1>
                 <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-amber-950">
                   Demonstration · Not for certification

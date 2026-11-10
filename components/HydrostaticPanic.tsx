@@ -8,6 +8,7 @@ import {
   useTransform,
 } from "framer-motion";
 import HydraulicScene3D from "./HydraulicScene3D";
+import LogoMark from "./LogoMark";
 
 function NarrativeCard({
   children,
@@ -92,8 +93,8 @@ export default function HydrostaticPanic() {
 
         <header className="absolute inset-x-0 top-0 z-[70] flex items-center justify-between px-5 py-5 sm:px-10 sm:py-7">
           <a href="#top" className="group flex items-center gap-3" aria-label="Dam Right home">
-            <span className="grid size-9 place-items-center border border-cyan-200/30 bg-cyan-200/10 font-[var(--font-display)] text-sm font-black text-cyan-200 backdrop-blur-md transition group-hover:bg-cyan-200/20">
-              DR
+            <span className="grid size-9 place-items-center rounded-lg border border-cyan-200/30 bg-cyan-200/10 text-cyan-200 backdrop-blur-md transition group-hover:bg-cyan-200/20">
+              <LogoMark className="size-6" />
             </span>
             <span className="font-[var(--font-display)] text-sm font-bold uppercase tracking-[0.2em]">Dam Right</span>
           </a>
