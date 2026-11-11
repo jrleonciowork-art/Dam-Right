@@ -1,6 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-  <rect width="48" height="48" rx="10" fill="#14202B"/>
-  <path d="M10 39V11h7.5v20.5H37V39z" fill="#5ED3DE"/>
-  <path d="M21 28c3.8-2.8 7.6 2.8 11.4 0s7.6 2.8 9.6 1" stroke="#5ED3DE" stroke-width="3" stroke-linecap="round" fill="none"/>
-  <path d="M21 21c3.8-2.8 7.6 2.8 11.4 0s7.6 2.8 9.6 1" stroke="#5ED3DE" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.55"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 528" width="620" height="528">
+  <rect width="620" height="528" rx="40" fill="#061922"/>
+  <!-- L Flood Wall -->
+  <path d="M41 34H171V366H503V496H41V34Z" fill="#5ED3DE"/>
+  <!-- Top Wave -->
+  <path d="M243 172C278 145 300 128 332 128C380 128 415 171 467 171C504 171 528 152 560 140" stroke="#387984" stroke-width="54" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Bottom Wave -->
+  <path d="M243 275C278 248 300 231 332 231C380 231 415 274 467 274C504 274 528 255 560 243" stroke="#4BA6B1" stroke-width="54" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>

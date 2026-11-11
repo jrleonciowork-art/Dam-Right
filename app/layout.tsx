@@ -10,11 +10,13 @@ export const metadata: Metadata = {
   description: "Real-time flood-control structure monitoring and evaluation.",
   icons: {
     icon: [
-      { url: "/icon", type: "image/png", sizes: "32x32" },
+      { url: "/favicon.ico", sizes: "any" },
       { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", type: "image/png" },
     ],
     apple: [
       { url: "/apple-icon", sizes: "180x180", type: "image/png" },
+      { url: "/icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
 };

@@ -16,30 +16,31 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#14202B",
+          background: "#061922",
           borderRadius: 36,
         }}
       >
         <svg
-          viewBox="0 0 48 48"
-          width="130"
-          height="130"
+          viewBox="0 0 620 528"
+          width="140"
+          height="120"
         >
-          <path d="M10 39V11h7.5v20.5H37V39z" fill="#5ED3DE" />
+          <path d="M41 34H171V366H503V496H41V34Z" fill="#5ED3DE" />
           <path
-            d="M21 28c3.8-2.8 7.6 2.8 11.4 0s7.6 2.8 9.6 1"
-            stroke="#5ED3DE"
-            strokeWidth="3.5"
+            d="M243 172C278 145 300 128 332 128C380 128 415 171 467 171C504 171 528 152 560 140"
+            stroke="#387984"
+            strokeWidth="54"
             strokeLinecap="round"
+            strokeLinejoin="round"
             fill="none"
           />
           <path
-            d="M21 21c3.8-2.8 7.6 2.8 11.4 0s7.6 2.8 9.6 1"
-            stroke="#5ED3DE"
-            strokeWidth="3.5"
+            d="M243 275C278 248 300 231 332 231C380 231 415 274 467 274C504 274 528 255 560 243"
+            stroke="#4BA6B1"
+            strokeWidth="54"
             strokeLinecap="round"
+            strokeLinejoin="round"
             fill="none"
-            opacity="0.55"
           />
         </svg>
       </div>

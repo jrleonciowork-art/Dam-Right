@@ -165,11 +165,11 @@ const StatusIcon: React.FC<{ color: string; label: string }> = ({ color, label }
   return (<svg width={s} height={s} viewBox="0 0 14 14"><path d="M7 1.5L13 12H1z" stroke={color} strokeWidth="2" fill="none" /><path d="M7 5.5v3" stroke={color} strokeWidth="2" /></svg>);
 };
 
-const LogoMark: React.FC<{ size?: number; color?: string }> = ({ size = 48, color = C.tide }) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <path d="M10 42V12h8v22h20v8z" fill={color} />
-    <path d="M22 30c4-3 8 3 12 0s8 3 10 1" stroke={color} strokeWidth="3" fill="none" />
-    <path d="M22 23c4-3 8 3 12 0s8 3 10 1" stroke={color} strokeWidth="3" fill="none" opacity="0.5" />
+const LogoMark: React.FC<{ size?: number; color?: string }> = ({ size = 48, color = "#5ED3DE" }) => (
+  <svg width={size} height={(size * 528) / 620} viewBox="0 0 620 528" fill="none">
+    <path d="M41 34H171V366H503V496H41V34Z" fill={color} />
+    <path d="M243 172C278 145 300 128 332 128C380 128 415 171 467 171C504 171 528 152 560 140" stroke="#387984" strokeWidth="54" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    <path d="M243 275C278 248 300 231 332 231C380 231 415 274 467 274C504 274 528 255 560 243" stroke="#4BA6B1" strokeWidth="54" strokeLinecap="round" strokeLinejoin="round" fill="none" />
   </svg>
 );
 
